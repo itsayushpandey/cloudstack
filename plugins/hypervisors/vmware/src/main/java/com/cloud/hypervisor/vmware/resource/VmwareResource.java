@@ -7285,6 +7285,7 @@ public class VmwareResource extends ServerResourceBase implements StoragePoolRes
             VmwareHypervisorHost hyperHost = getHyperHost(context);
 
             String vmName = cmd.getInstanceName();
+            // TODO: Ayush, ask if VMWare can have more than 1 VM for given hypervisor VMName. IS it also possible on KVM
             List<VirtualMachineMO> vmMos = hyperHost.listVmsOnHyperHostWithHypervisorName(vmName);
 
             for (VirtualMachineMO vmMo : vmMos) {

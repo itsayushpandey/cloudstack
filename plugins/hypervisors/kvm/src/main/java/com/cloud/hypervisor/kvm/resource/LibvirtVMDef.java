@@ -576,7 +576,6 @@ public class LibvirtVMDef {
         enum DiskType {
             FILE("file"), BLOCK("block"), DIRECTROY("dir"), NETWORK("network");
             String _diskType;
-
             DiskType(String type) {
                 _diskType = type;
             }
@@ -1583,6 +1582,10 @@ public class LibvirtVMDef {
             // close cpu def
             modeBuilder.append("</cpu>");
             return modeBuilder.toString();
+        }
+
+        public int getCoresPerSocket() {
+            return _coresPerSocket;
         }
     }
 

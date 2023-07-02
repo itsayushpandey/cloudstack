@@ -37,6 +37,8 @@ import org.xml.sax.InputSource;
 import org.xml.sax.SAXException;
 
 import com.cloud.hypervisor.kvm.resource.LibvirtVMDef.ChannelDef;
+import com.cloud.hypervisor.kvm.resource.LibvirtVMDef.CpuModeDef;
+import com.cloud.hypervisor.kvm.resource.LibvirtVMDef.CpuTuneDef;
 import com.cloud.hypervisor.kvm.resource.LibvirtVMDef.DiskDef;
 import com.cloud.hypervisor.kvm.resource.LibvirtVMDef.InterfaceDef;
 import com.cloud.hypervisor.kvm.resource.LibvirtVMDef.InterfaceDef.NicModel;
@@ -55,6 +57,10 @@ public class LibvirtDomainXMLParser {
     private final List<WatchDogDef> watchDogDefs = new ArrayList<WatchDogDef>();
     private Integer vncPort;
     private String desc;
+
+    private CpuTuneDef cpuTuneDef;
+
+    private CpuModeDef cpuModeDef;
 
     public boolean parseDomainXML(String domXML) {
         DocumentBuilder builder;
@@ -321,6 +327,55 @@ public class LibvirtDomainXMLParser {
                 watchDogDefs.add(def);
             }
 
+            NodeList cpuTunesList = rootElement.getElementsByTagName("cputune");
+            if (cpuTunesList.getLength() > 0) {
+                cpuTuneDef = new CpuTuneDef();
+                final Element cpuTuneDefElement = (Element) cpuTunesList.item(0);
+                final String cpuShares = cpuTuneDefElement.getAttribute("shares");
+                if (StringUtils.isNotBlank(cpuShares)) {
+                    cpuTuneDef.setShares((Integer.parseInt(cpuShares)));
+                }
+
+                final String quota = cpuTuneDefElement.getAttribute("quota");
+                if (StringUtils.isNotBlank(quota)) {
+                    cpuTuneDef.setQuota((Integer.parseInt(quota)));
+                }
+
+                final String period = cpuTuneDefElement.getAttribute("period");
+                if (StringUtils.isNotBlank(period)) {
+                    cpuTuneDef.setQuota((Integer.parseInt(period)));
+                }
+            }
+
+            NodeList cpuModeList = rootElement.getElementsByTagName("cpu");
+            if (cpuModeList.getLength() > 0){
+                cpuModeDef = new CpuModeDef();
+                final Element cpuModeDefElement = (Element) cpuModeList.item(0);
+                final String cpuModel = cpuModeDefElement.getAttribute("model");
+                if (StringUtils.isNotBlank(cpuModel)){
+                    cpuModeDef.setModel(cpuModel);
+                }
+                NodeList cpuFeatures = cpuModeDefElement.getElementsByTagName("features");
+                if (cpuFeatures.getLength() > 0) {
+                    final ArrayList<String> features = new ArrayList<>(cpuFeatures.getLength());
+                    for (int i = 0; i < cpuFeatures.getLength(); i++) {
+                        final Element feature = (Element)cpuFeatures.item(i);
+                        final String policy = feature.getAttribute("policy");
+                        String featureName = feature.getAttribute("name");
+                        if ("disable".equals(policy)) {
+                            featureName = "-" + featureName;
+                        }
+                        features.add(featureName);
+                    }
+                    cpuModeDef.setFeatures(features);
+                }
+                final String sockets = getAttrValue("topology", "sockets", cpuModeDefElement);
+                final String cores = getAttrValue("topology", "cores", cpuModeDefElement);
+                if (StringUtils.isNotBlank(sockets) && StringUtils.isNotBlank(cores)) {
+                    cpuModeDef.setTopology(Integer.parseInt(cores), Integer.parseInt(sockets));
+                }
+            }
+
             return true;
         } catch (ParserConfigurationException e) {
             s_logger.debug(e.toString());
@@ -380,5 +435,13 @@ public class LibvirtDomainXMLParser {
 
     public String getDescription() {
         return desc;
+    }
+
+    public CpuTuneDef getCpuTuneDef() {
+        return cpuTuneDef;
+    }
+
+    public CpuModeDef getCpuModeDef() {
+        return cpuModeDef;
     }
 }

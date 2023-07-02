@@ -7940,8 +7940,8 @@ public class UserVmManagerImpl extends ManagerBase implements UserVmManager, Vir
                 return false;
             }
 
-            if (vm.getHypervisorType() != Hypervisor.HypervisorType.VMware) {
-                throw new UnsupportedServiceException("Unmanaging a VM is currently allowed for VMware VMs only");
+            if (vm.getHypervisorType() != Hypervisor.HypervisorType.VMware && vm.getHypervisorType() != Hypervisor.HypervisorType.KVM) {
+                throw new UnsupportedServiceException("Unmanaging a VM is currently allowed for VMware and KVM VMs only");
             }
 
             List<VolumeVO> volumes = _volsDao.findByInstance(vm.getId());

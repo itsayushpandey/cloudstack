@@ -302,6 +302,7 @@ public class UnmanagedVMsManagerImpl implements UnmanagedVMsManager {
         if (cluster == null) {
             return additionalNameFilter;
         }
+        // TODO:  Ayush - invesgigate KVM specific changes
         if (cluster.getHypervisorType() == Hypervisor.HypervisorType.VMware) {
             // VMWare considers some templates as VM and they are not filtered by VirtualMachineMO.isTemplate()
             List<VMTemplateStoragePoolVO> templates = templatePoolDao.listAll();
@@ -1049,7 +1050,8 @@ public class UnmanagedVMsManagerImpl implements UnmanagedVMsManager {
         if (cluster == null) {
             throw new InvalidParameterValueException(String.format("Cluster ID: %d cannot be found", clusterId));
         }
-        if (cluster.getHypervisorType() != Hypervisor.HypervisorType.VMware) {
+        //TODO: Ayush Need to check
+        if (cluster.getHypervisorType() != Hypervisor.HypervisorType.VMware && cluster.getHypervisorType() != Hypervisor.HypervisorType.KVM) {
             throw new InvalidParameterValueException(String.format("VM ingestion is currently not supported for hypervisor: %s", cluster.getHypervisorType().toString()));
         }
         String keyword = cmd.getKeyword();
@@ -1105,7 +1107,8 @@ public class UnmanagedVMsManagerImpl implements UnmanagedVMsManager {
         if (cluster == null) {
             throw new InvalidParameterValueException(String.format("Cluster ID: %d cannot be found", clusterId));
         }
-        if (cluster.getHypervisorType() != Hypervisor.HypervisorType.VMware) {
+        //TODO: Ayush Need to check here too
+        if (cluster.getHypervisorType() != Hypervisor.HypervisorType.VMware && cluster.getHypervisorType() != Hypervisor.HypervisorType.KVM ) {
             throw new InvalidParameterValueException(String.format("VM import is currently not supported for hypervisor: %s", cluster.getHypervisorType().toString()));
         }
         final DataCenter zone = dataCenterDao.findById(cluster.getDataCenterId());
@@ -1168,6 +1171,7 @@ public class UnmanagedVMsManagerImpl implements UnmanagedVMsManager {
             throw new InvalidParameterValueException("Invalid VM hostname. VM hostname can contain ASCII letters 'a' through 'z', the digits '0' through '9', "
                     + "and the hyphen ('-'), must be between 1 and 63 characters long, and can't start or end with \"-\" and can't start with digit");
         }
+        //TODO: Ayush Check this too
         if (cluster.getHypervisorType().equals(Hypervisor.HypervisorType.VMware) &&
                 Boolean.parseBoolean(configurationDao.getValue(Config.SetVmInternalNameUsingDisplayName.key()))) {
             // If global config vm.instancename.flag is set to true, then CS will set guest VM's name as it appears on the hypervisor, to its hostname.
@@ -1330,8 +1334,8 @@ public class UnmanagedVMsManagerImpl implements UnmanagedVMsManager {
             throw new InvalidParameterValueException("Could not find VM to unmanage, it is either removed or not existing VM");
         } else if (vmVO.getState() != VirtualMachine.State.Running && vmVO.getState() != VirtualMachine.State.Stopped) {
             throw new InvalidParameterValueException("VM with id = " + vmVO.getUuid() + " must be running or stopped to be unmanaged");
-        } else if (vmVO.getHypervisorType() != Hypervisor.HypervisorType.VMware) {
-            throw new UnsupportedServiceException("Unmanage VM is currently allowed for VMware VMs only");
+        } else if (vmVO.getHypervisorType() != Hypervisor.HypervisorType.VMware && vmVO.getHypervisorType() != Hypervisor.HypervisorType.KVM) {
+            throw new UnsupportedServiceException("Unmanage VM is currently allowed for VMware and KVM VMs only");
         } else if (vmVO.getType() != VirtualMachine.Type.User) {
             throw new UnsupportedServiceException("Unmanage VM is currently allowed for guest VMs only");
         }
@@ -1355,9 +1359,10 @@ public class UnmanagedVMsManagerImpl implements UnmanagedVMsManager {
         PrepareUnmanageVMInstanceCommand command = new PrepareUnmanageVMInstanceCommand();
         command.setInstanceName(instanceName);
         Answer ans = agentManager.easySend(hostId, command);
-        if (!(ans instanceof PrepareUnmanageVMInstanceAnswer)) {
-            throw new CloudRuntimeException("Error communicating with host " + hostId);
-        }
+        // TODO: Ayush uncomment condition to see changes
+//        if (!(ans instanceof PrepareUnmanageVMInstanceAnswer)) {
+//            throw new CloudRuntimeException("Error communicating with host " + hostId);
+//        }
         PrepareUnmanageVMInstanceAnswer answer = (PrepareUnmanageVMInstanceAnswer) ans;
         if (!answer.getResult()) {
             LOGGER.error("Error verifying VM " + instanceName + " exists on host with ID = " + hostId + ": " + answer.getDetails());
